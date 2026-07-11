@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Springlight PACE — Project Hub</title>
+<style>
+  :root{
+    --bg: #F7F6F1;
+    --ink: #23302E;
+    --ink-soft: #55625F;
+    --header: #24424A;
+    --line: #D8D3C6;
+    --accent: #6E8C7F;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family: -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+    line-height:1.5;
+  }
+  .wrap{ max-width:900px; margin:0 auto; padding:48px 24px 80px; }
+
+  header{ border-bottom:2px solid var(--header); padding-bottom:20px; margin-bottom:36px; }
+  header .eyebrow{
+    text-transform:uppercase; letter-spacing:.08em; font-size:12px;
+    color:var(--accent); font-weight:600; margin-bottom:6px;
+  }
+  header h1{
+    font-family: Georgia,"Times New Roman",serif; font-weight:600;
+    font-size:32px; color:var(--header); margin:0;
+  }
+  header p{ color:var(--ink-soft); margin:8px 0 0; font-size:15px; }
+
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px,1fr)); gap:16px; }
+
+  a.card{
+    display:block; text-decoration:none; color:inherit;
+    background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:20px; transition:border-color .15s ease, transform .15s ease;
+  }
+  a.card:hover{ border-color:var(--accent); transform:translateY(-2px); }
+  a.card:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  a.card .name{ font-weight:600; font-size:16px; color:var(--header); }
+  a.card .desc{ font-size:13.5px; color:var(--ink-soft); margin-top:6px; }
+
+  .card.placeholder{
+    border-style:dashed; color:var(--ink-soft); display:flex;
+    align-items:center; justify-content:center; font-size:13.5px;
+    min-height:76px;
+  }
+
+  footer{ margin-top:48px; font-size:12.5px; color:var(--ink-soft); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Asian Health Services</div>
+    <h1>Springlight PACE</h1>
+    <p>Project hub — click into a tracker below.</p>
+  </header>
+
+  <div class="grid">
+
+    <a class="card" href="milestone-tracker/">
+      <div class="name">Milestone Tracker</div>
+      <div class="desc">Deadline &amp; critical-path tracker for launch workstreams.</div>
+    </a>
+
+    <!--
+      To add a new project:
+      1. Create a new folder in this repo, e.g. /vendor-review/
+      2. Put its index.html (and data.json) inside it
+      3. Copy the <a class="card"> block above, change the href and text
+    -->
+
+    <div class="card placeholder">+ Next project goes here</div>
+
+  </div>
+
+  <footer>Springlight PACE · internal use</footer>
+
+</div>
+</body>
+</html>
