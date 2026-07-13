@@ -1,0 +1,52 @@
+{
+  "projectTitle": "SAMPLE — Replace with your project (Import JSON to load real data)",
+  "milestones": [
+    {
+      "id": "M1",
+      "name": "Start recruitment",
+      "owner": "Owner A",
+      "predecessors": [
+        "M3",
+        "M4"
+      ],
+      "duration": 30,
+      "targetDate": null
+    },
+    {
+      "id": "M2",
+      "name": "Enroll 12 pts",
+      "owner": "Owner B",
+      "predecessors": [
+        "M1"
+      ],
+      "duration": 30,
+      "targetDate": "2027-01-01"
+    },
+    {
+      "id": "M3",
+      "name": "Contract with state to start marketing",
+      "owner": "",
+      "predecessors": [
+        "M5"
+      ],
+      "duration": 90,
+      "targetDate": null
+    },
+    {
+      "id": "M4",
+      "name": "List of patients to contact",
+      "owner": "",
+      "predecessors": [],
+      "duration": 30,
+      "targetDate": null
+    },
+    {
+      "id": "M5",
+      "name": "Submit SRR tool",
+      "owner": "",
+      "predecessors": [],
+      "duration": 1,
+      "targetDate": "2026-07-30"
+    }
+  ]
+}

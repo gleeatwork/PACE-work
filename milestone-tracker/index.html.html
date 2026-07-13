@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Milestone Deadline Tracker — Template</title>
+<style>
+  :root{
+    --bg: #F7F6F1;
+    --ink: #23302E;
+    --ink-soft: #55625F;
+    --header: #24424A;
+    --header-ink: #F7F6F1;
+    --line: #D8D3C6;
+    --accent: #6E8C7F;
+    --overdue: #B4463A;
+    --overdue-bg: #FBE6E2;
+    --soon: #A8641A;
+    --soon-bg: #FBF1D9;
+    --undetermined: #9AA39F;
+    --undetermined-bg: #EFEDE4;
+    --warn-edge: #A8641A;
+    --today-line: #2A5470;
+    --anchor: #24424A;
+    --critical: #6B4C9A;
+    --critical-bg: #EFE9F5;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family: -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+    font-size:14px; line-height:1.45;
+  }
+  .wrap{ max-width:1500px; margin:0 auto; padding:28px 24px 60px; }
+
+  header.doc{ margin-bottom:16px; border-bottom:2px solid var(--header); padding-bottom:16px; }
+  .title-row{ display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; }
+  .title-row input#projTitle{
+    font-family: Georgia,"Times New Roman",serif; font-weight:600; font-size:24px;
+    color:var(--header); border:none; background:transparent; padding:2px 4px;
+    border-radius:4px; min-width:280px;
+  }
+  .title-row input#projTitle:focus{ outline:2px solid var(--accent); background:#fff; }
+  .date-field{ font-size:13px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; }
+  .date-btn{
+    font-family:inherit; font-size:13px; font-weight:600; color:var(--header);
+    background:#fff; border:1px solid var(--line); border-radius:5px;
+    padding:5px 12px; cursor:pointer;
+  }
+  .date-btn:hover{ background:#F1EFE7; }
+  p.tagline{ margin:6px 0 0; color:var(--ink-soft); font-size:13px; }
+
+  .banner{
+    display:flex; align-items:flex-start; gap:10px;
+    background:var(--soon-bg); border:1px solid var(--warn-edge); border-left:5px solid var(--warn-edge);
+    padding:10px 14px; border-radius:4px; margin:14px 0; font-size:13px; color:#5B4110; display:none;
+    flex-direction:column; gap:4px;
+  }
+  .banner.show{ display:flex; }
+  .banner b{ color:#463008; }
+
+  .toolbar{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    background:#fff; border:1px solid var(--line); border-radius:6px;
+    padding:8px 10px; margin:14px 0;
+  }
+  .toolbar button, .toolbar label.filebtn{
+    font-family:inherit; font-size:12.5px; font-weight:600;
+    padding:7px 12px; border-radius:5px; cursor:pointer;
+    border:1px solid var(--line); background:#F4F2EC; color:var(--ink);
+  }
+  .toolbar button.primary{ background:var(--header); color:#fff; border-color:var(--header); }
+  .toolbar input[type=file]{ display:none; }
+  .toolbar .status{ font-size:12px; color:var(--ink-soft); margin-left:auto; }
+  .saved-indicator{ font-size:11.5px; color:var(--accent); margin-left:auto; }
+  .saved-indicator:not(:empty) + .status{ margin-left:10px; }
+
+  .legend{ display:flex; gap:18px; flex-wrap:wrap; margin:4px 0 16px; font-size:12.5px; color:var(--ink-soft); }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .swatch{ width:12px; height:12px; border-radius:50%; display:inline-block; }
+  .swatch.overdue{ background:var(--overdue); }
+  .swatch.soon{ background:var(--soon); }
+  .swatch.ok{ background:var(--accent); }
+  .swatch.undetermined{ background:var(--undetermined); }
+  .swatch.anchor{ background:var(--anchor); border-radius:2px; }
+
+  .table-scroll{ overflow-x:auto; border:1px solid var(--line); border-radius:6px; background:#fff; }
+  table.cpm{ border-collapse:separate; border-spacing:0; width:100%; min-width:1050px; }
+  table.cpm th, table.cpm td{
+    border-bottom:1px solid var(--line); border-right:1px solid var(--line);
+    padding:7px 8px; vertical-align:middle; font-size:12.8px;
+  }
+  table.cpm thead th{
+    background:var(--header); color:var(--header-ink);
+    font-family: Georgia,"Times New Roman",serif; font-weight:600; font-size:12.5px;
+    text-align:left; position:sticky; top:0; z-index:2;
+  }
+  table.cpm tbody tr.overdue{ background:var(--overdue-bg); }
+  table.cpm tbody tr.soon{ background:var(--soon-bg); }
+  table.cpm tbody tr.undetermined{ background:var(--undetermined-bg); }
+  table.cpm tbody tr.critical td.id-col{ position:relative; }
+  table.cpm tbody tr.critical td.id-col::before{
+    content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--critical);
+  }
+  .crit-badge{
+    display:inline-block; font-size:9.5px; font-weight:700; padding:1px 6px; border-radius:8px;
+    background:var(--critical); color:#fff; margin-left:6px; vertical-align:middle;
+  }
+  table.cpm td input{
+    width:100%; font-family:inherit; font-size:12.8px; border:1px solid transparent;
+    background:transparent; border-radius:3px; padding:3px 4px; color:var(--ink);
+  }
+  table.cpm td input:focus{ outline:none; border-color:var(--accent); background:#FFFDF6; }
+  table.cpm td.id-col{ font-weight:700; color:var(--header); white-space:nowrap; }
+  table.cpm td.computed{ color:var(--ink); white-space:nowrap; font-variant-numeric:tabular-nums; }
+  table.cpm td.computed .offset{ display:block; font-size:10.5px; color:var(--ink-soft); opacity:0.85; }
+  .target-btn{
+    font-family:inherit; font-size:12px; font-weight:600; color:var(--ink);
+    background:#F4F2EC; border:1px solid var(--line); border-radius:4px;
+    padding:4px 8px; cursor:pointer; white-space:nowrap;
+  }
+  .target-btn.anchored{ background:var(--anchor); color:#fff; border-color:var(--anchor); }
+  .target-btn:hover{ opacity:0.9; }
+  .status-badge{
+    display:inline-block; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:10px; white-space:nowrap;
+  }
+  .status-badge.overdue{ background:var(--overdue); color:#fff; }
+  .status-badge.soon{ background:var(--soon); color:#fff; }
+  .status-badge.ok{ background:#EDEAE0; color:var(--ink-soft); }
+  .status-badge.undetermined{ background:var(--undetermined); color:#fff; }
+  .del-row{
+    background:none; border:none; color:var(--overdue); font-size:15px; cursor:pointer; font-weight:700;
+  }
+  .add-row-btn{
+    display:inline-block; margin:10px 0 0; font-size:12.5px; font-weight:600;
+    color:var(--accent); cursor:pointer; background:none; border:1px dashed var(--accent);
+    border-radius:5px; padding:7px 14px;
+  }
+
+  .timeline-wrap{ margin-top:26px; }
+  .timeline-wrap h2{ font-family: Georgia,"Times New Roman",serif; font-size:17px; color:var(--header); margin:0 0 10px; }
+  .timeline-scroll{ overflow-x:auto; border:1px solid var(--line); border-radius:6px; background:#fff; padding:14px 16px 26px; position:relative; }
+  .unscheduled-panel{
+    margin-top:14px; padding:10px 14px; background:#FAF9F5; border:1px dashed var(--line);
+    border-radius:6px; font-size:12px; color:var(--ink-soft);
+  }
+  .unscheduled-panel b{ color:var(--ink); }
+  .unscheduled-chip{
+    display:inline-block; background:#EFEDE4; color:var(--ink); border-radius:10px;
+    padding:2px 9px; margin:4px 4px 0 0; font-size:11.5px;
+  }
+
+  footer.notes{
+    margin-top:24px; font-size:12px; color:var(--ink-soft);
+    border-top:1px solid var(--line); padding-top:12px;
+  }
+  footer.notes b{ color:var(--ink); }
+  footer.notes code{ background:#EFEDE4; padding:1px 5px; border-radius:3px; }
+
+  @media print{
+    .toolbar, .banner{ display:none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc">
+    <div class="title-row">
+      <input id="projTitle" value="Untitled Project">
+      <div class="date-field">
+        Today: <button type="button" id="todayBtn" class="date-btn"></button>
+      </div>
+    </div>
+    <p class="tagline">Milestones + dependencies. Some milestones carry their own fixed date (external deadlines); everything else is worked out backward from whatever they depend on.</p>
+  </header>
+
+  <div class="banner" id="cycleBanner"></div>
+  <div class="banner" id="conflictBanner"></div>
+  <div class="banner" id="infeasibleBanner"></div>
+
+  <div class="toolbar">
+    <label class="filebtn">📂 Import JSON<input type="file" id="importFile" accept="application/json"></label>
+    <button id="exportBtn" class="primary">⬇️ Export JSON</button>
+    <button id="printBtn">🖨️ Print</button>
+    <span class="saved-indicator" id="savedIndicator"></span>
+    <span class="status" id="statusMsg"></span>
+  </div>
+
+  <div class="legend">
+    <span><span class="swatch anchor"></span> Fixed date (you set this)</span>
+    <span><span class="swatch" style="background:var(--critical);"></span> Critical path — least slack, the real bottleneck</span>
+    <span><span class="swatch overdue"></span> Overdue</span>
+    <span><span class="swatch soon"></span> Due soon (within 14 days)</span>
+    <span><span class="swatch ok"></span> On track</span>
+    <span><span class="swatch undetermined"></span> No date yet — not connected to a fixed deadline</span>
+  </div>
+
+  <div class="table-scroll">
+    <table class="cpm" id="cpmTable">
+      <thead>
+        <tr>
+          <th style="width:44px;">ID</th>
+          <th style="width:250px;">Milestone</th>
+          <th style="width:130px;">Owner</th>
+          <th style="width:150px;">Depends on</th>
+          <th style="width:75px;">Duration (days)</th>
+          <th style="width:120px;">Latest Start</th>
+          <th style="width:160px;">Finish date</th>
+          <th style="width:70px;">Float</th>
+          <th style="width:110px;">Status</th>
+          <th style="width:30px;"></th>
+        </tr>
+      </thead>
+      <tbody id="cpmBody"></tbody>
+    </table>
+  </div>
+  <button class="add-row-btn" id="addRowBtn">+ Add milestone</button>
+
+  <div class="timeline-wrap">
+    <h2>Milestone timeline</h2>
+    <div class="timeline-scroll" id="timelineScroll"></div>
+  </div>
+
+  <footer class="notes">
+    <b>How dates get set:</b> click <b>Finish date</b> on any milestone to pin it to a fixed, external date (shown in dark teal) — use this for things like grant deadlines, regulatory dates, or contract dates you already know. Leave it "auto" and it shows the computed date instead — set to match whatever depends on it starting on time. <b>Latest Start</b> is that finish date minus the milestone's own <b>Duration</b>.
+    <br><b>About the CRITICAL badge:</b> it marks the tightest chain of milestones feeding the actual final deadline. A milestone with its own fixed date that <i>other things depend on</i> (like an early internal submission deadline) is evaluated against its own date, not folded into the main critical-path comparison — so a milestone that's individually tight but isn't the true bottleneck for the final deadline won't misleadingly steal the badge.
+    <br><b>This is a generic template.</b> The engine (this HTML file) stays the same across every part of your project — only the data changes.
+    <br><b>To reuse for another project area:</b> Export this project's JSON, then either (a) open this same HTML file and use <b>Import JSON</b> to load different data, or (b) host each project's data as its own file on GitHub Pages (e.g. <code>snf-network.json</code>) and link with <code>?data=snf-network.json</code> — same engine, different data.
+    <br><b>Persistence:</b> edits live in this browser tab only until you Export. Export → commit the JSON to your GitHub repo → next person opens the page fresh and gets your latest version.
+  </footer>
+
+</div>
+
+<script>
+/* ---------------- sample / default data ---------------- */
+const SAMPLE_DATA = {
+  projectTitle: "SAMPLE — Replace with your project (Import JSON to load real data)",
+  milestones: [
+    {id:"M1", name:"Start recruitment", owner:"Owner A", predecessors:["M3","M4"], duration:30, targetDate:null},
+    {id:"M2", name:"Enroll 12 pts", owner:"Owner B", predecessors:["M1"], duration:30, targetDate:"2027-01-01"},
+    {id:"M3", name:"Contract with state to start marketing", owner:"", predecessors:["M5"], duration:90, targetDate:null},
+    {id:"M4", name:"List of patients to contact", owner:"", predecessors:[], duration:30, targetDate:null},
+    {id:"M5", name:"Submit SRR tool", owner:"", predecessors:[], duration:1, targetDate:"2026-07-20"},
+  ]
+};
+
+const SOON_THRESHOLD_DAYS = 14;
+
+let projectTitle = "";
+let todayDate = "";
+let milestones = []; // {id,name,owner,predecessors:[],duration,targetDate: iso|null}
+let nextIdNum = 1;
+
+const statusEl = document.getElementById("statusMsg");
+function setStatus(msg, timeout){
+  statusEl.textContent = msg;
+  if(timeout){ setTimeout(()=>{ if(statusEl.textContent===msg) statusEl.textContent=""; }, timeout); }
+}
+
+function toDateObj(iso){
+  if(!iso) return null;
+  const d = new Date(iso + "T00:00:00");
+  return isNaN(d.getTime()) ? null : d;
+}
+function daysBetween(isoA, isoB){
+  const a = toDateObj(isoA), b = toDateObj(isoB);
+  if(!a || !b) return null;
+  return Math.round((b - a) / 86400000);
+}
+function addDaysISO(iso, days){
+  const d = toDateObj(iso);
+  if(!d) return null;
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0,10);
+}
+function fmtShort(iso){
+  const d = toDateObj(iso);
+  if(!d) return "";
+  return d.toLocaleDateString(undefined, {month:"short", day:"numeric", year:"numeric"});
+}
+function isValidIsoDate(s){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  return toDateObj(s) !== null;
+}
+
+/* ---------------- milestone backward-propagation engine ---------------- */
+function computeMilestones(items, todayIso){
+  const byId = {};
+  items.forEach(m=> byId[m.id] = m);
+
+  const successors = {};
+  items.forEach(m=> successors[m.id] = []);
+  items.forEach(m=>{
+    (m.predecessors||[]).forEach(p=>{
+      if(successors[p]) successors[p].push(m.id);
+    });
+  });
+
+  const indeg = {};
+  items.forEach(m=> indeg[m.id] = (m.predecessors||[]).filter(p=>byId[p]).length);
+  const queue = items.filter(m=> indeg[m.id]===0).map(m=>m.id);
+  const order = [];
+  const indegCopy = {...indeg};
+  while(queue.length){
+    const id = queue.shift();
+    order.push(id);
+    successors[id].forEach(s=>{
+      indegCopy[s]--;
+      if(indegCopy[s]===0) queue.push(s);
+    });
+  }
+  if(order.length < items.length){
+    const stuck = items.filter(m=> !order.includes(m.id)).map(m=>m.id);
+    return {error:"cycle", stuckIds:stuck};
+  }
+
+  const LF = {}, LS = {}; // Latest Finish, Latest Start
+  const requiredByChain = {}; // what successors actually need, regardless of any self-set target
+  const conflicts = [];
+
+  [...order].reverse().forEach(id=>{
+    const m = byId[id];
+    const succ = successors[id];
+    const duration = Number(m.duration||0);
+
+    let fromSuccessors = null;
+    if(succ.length){
+      const succStarts = succ.map(s=> LS[s]).filter(Boolean);
+      if(succStarts.length){
+        fromSuccessors = succStarts.reduce((min,d)=> (d < min ? d : min), succStarts[0]);
+      }
+    }
+    requiredByChain[id] = fromSuccessors;
+
+    if(m.targetDate && isValidIsoDate(m.targetDate)){
+      LF[id] = m.targetDate;
+      if(fromSuccessors && m.targetDate > fromSuccessors){
+        conflicts.push({id, name:m.name, targetDate:m.targetDate, requiredBy:fromSuccessors});
+      }
+    } else {
+      LF[id] = fromSuccessors; // may be null = undetermined
+    }
+    LS[id] = LF[id] ? addDaysISO(LF[id], -duration) : null;
+  });
+
+  // forward pass: earliest each milestone could start/finish, working from today
+  const ES = {}, EF = {};
+  order.forEach(id=>{
+    const m = byId[id];
+    const duration = Number(m.duration||0);
+    const preds = (m.predecessors||[]).filter(p=>byId[p]);
+    ES[id] = preds.length ? preds.map(p=>EF[p]).reduce((max,d)=> (d>max?d:max), preds.map(p=>EF[p])[0]) : todayIso;
+    EF[id] = addDaysISO(ES[id], duration);
+  });
+
+  const floats = {};
+  order.forEach(id=>{
+    if(LS[id]){ floats[id] = daysBetween(ES[id], LS[id]); }
+  });
+
+  // A milestone with its OWN target date only gets excluded from "critical path" competition
+  // when that date is genuinely EARLIER than what the chain requires — i.e., it created slack
+  // that isn't really there. If the self-set date exactly matches (or exceeds) what's required,
+  // it's a binding constraint like any other, and should compete normally.
+  const eligibleForCritical = (id)=>{
+    const m = byId[id];
+    const isAnchored = !!(m.targetDate && isValidIsoDate(m.targetDate));
+    if(!isAnchored) return true;
+    const required = requiredByChain[id];
+    if(!required) return true; // no downstream requirement to compare against (or terminal)
+    return !(m.targetDate < required); // excluded only if strictly earlier than required
+  };
+
+  const floatVals = order
+    .filter(id=> eligibleForCritical(id) && floats[id]!==undefined && floats[id]!==null)
+    .map(id=>floats[id]);
+  const minFloat = floatVals.length ? Math.min(...floatVals) : null;
+
+  const infeasible = [];
+  order.forEach(id=>{
+    if(floats[id] !== undefined && floats[id] < 0){
+      infeasible.push({id, name:byId[id].name, shortBy:-floats[id]});
+    }
+  });
+
+  const statusFor = (iso)=>{
+    if(!iso) return "undetermined";
+    const diff = daysBetween(todayIso, iso);
+    if(diff === null) return "undetermined";
+    if(diff < 0) return "overdue";
+    if(diff <= SOON_THRESHOLD_DAYS) return "soon";
+    return "ok";
+  };
+
+  const result = {};
+  items.forEach(m=>{
+    const float = floats[m.id] !== undefined ? floats[m.id] : null;
+    result[m.id] = {
+      LF: LF[m.id] || null,
+      LS: LS[m.id] || null,
+      ES: ES[m.id] || null,
+      EF: EF[m.id] || null,
+      float,
+      critical: (float !== null && minFloat !== null && float === minFloat && eligibleForCritical(m.id)),
+      isAnchor: !!(m.targetDate && isValidIsoDate(m.targetDate)),
+      status: statusFor(LF[m.id])
+    };
+  });
+
+  return {ok:true, byMilestone: result, conflicts, infeasible};
+}
+
+/* ---------------- rendering ---------------- */
+function slugify(s){
+  return (s||"project").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"") || "project";
+}
+function escapeAttr(s){
+  return String(s==null?"":s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+}
+function fmtButtonLabel(iso){
+  const d = toDateObj(iso);
+  if(!d) return "Set date…";
+  return d.toLocaleDateString(undefined, {year:"numeric", month:"short", day:"numeric"}) + "  ✏️";
+}
+
+function renderAll(){
+  document.getElementById("projTitle").value = projectTitle;
+  document.getElementById("todayBtn").textContent = fmtButtonLabel(todayDate);
+
+  const cpm = computeMilestones(milestones, todayDate);
+  const cycleBanner = document.getElementById("cycleBanner");
+  const conflictBanner = document.getElementById("conflictBanner");
+  const infeasibleBanner = document.getElementById("infeasibleBanner");
+
+  if(cpm.error === "cycle"){
+    cycleBanner.classList.add("show");
+    cycleBanner.innerHTML = `<span>⚠ <b>Circular dependency detected</b> among: ${cpm.stuckIds.join(", ")}. Fix the "Depends on" chain — dates can't be computed until this is resolved.</span>`;
+    conflictBanner.classList.remove("show");
+    infeasibleBanner.classList.remove("show");
+    renderTableRows(null);
+    document.getElementById("timelineScroll").innerHTML = "<p style='color:#B9B4A6;font-style:italic;padding:10px;'>Timeline unavailable while a circular dependency exists.</p>";
+    saveToLocalStorage();
+    return;
+  }
+  cycleBanner.classList.remove("show");
+
+  if(cpm.conflicts && cpm.conflicts.length){
+    conflictBanner.classList.add("show");
+    conflictBanner.innerHTML = cpm.conflicts.map(c=>
+      `<span>⚠ <b>${escapeAttr(c.name)} (${c.id})</b> is fixed at ${fmtShort(c.targetDate)}, but what depends on it needs it done by ${fmtShort(c.requiredBy)} — that's a conflict worth resolving.</span>`
+    ).join("");
+  } else {
+    conflictBanner.classList.remove("show");
+  }
+
+  if(cpm.infeasible && cpm.infeasible.length){
+    infeasibleBanner.classList.add("show");
+    infeasibleBanner.innerHTML = cpm.infeasible.map(x=>
+      `<span>⚠ <b>${escapeAttr(x.name)} (${x.id})</b> can't make its required date even starting today — it's ${x.shortBy} day${x.shortBy===1?"":"s"} short. The deadline chain behind it may need to move, or its duration needs to shrink.</span>`
+    ).join("");
+  } else {
+    infeasibleBanner.classList.remove("show");
+  }
+
+  renderTableRows(cpm);
+  renderTimeline(cpm);
+  saveToLocalStorage();
+}
+
+function renderTableRows(cpm){
+  const tbody = document.getElementById("cpmBody");
+  tbody.innerHTML = "";
+  milestones.forEach((m)=>{
+    const tr = document.createElement("tr");
+    const c = cpm ? cpm.byMilestone[m.id] : null;
+    if(c){
+      tr.classList.add(c.status);
+      if(c.critical) tr.classList.add("critical");
+    }
+
+    const predVal = (m.predecessors||[]).join(", ");
+    const statusLabel = c ? ({overdue:"OVERDUE", soon:"DUE SOON", ok:"On track", undetermined:"No date yet"}[c.status]) : "—";
+    const isAnchored = !!m.targetDate;
+    const finishBtnLabel = isAnchored
+      ? fmtShort(m.targetDate) + "  ✏️"
+      : (c && c.LF ? fmtShort(c.LF) + " (auto)  ✏️" : "no date yet  ✏️");
+    const finishBtnCls = isAnchored ? "target-btn anchored" : "target-btn";
+    const critBadge = c && c.critical ? `<span class="crit-badge">CRITICAL</span>` : "";
+
+    tr.innerHTML = `
+      <td class="id-col">${m.id}${critBadge}</td>
+      <td><input type="text" data-field="name" value="${escapeAttr(m.name)}"></td>
+      <td><input type="text" data-field="owner" value="${escapeAttr(m.owner)}"></td>
+      <td><input type="text" data-field="predecessors" value="${escapeAttr(predVal)}" placeholder="e.g. M1, M2"></td>
+      <td><input type="number" min="0" step="1" data-field="duration" value="${m.duration||0}"></td>
+      <td class="computed">${c && c.LS ? fmtShort(c.LS) : "—"}</td>
+      <td><button type="button" class="${finishBtnCls}" data-role="target-btn">${finishBtnLabel}</button></td>
+      <td class="computed">${c && c.float!==null && c.float!==undefined ? c.float+" d" : "—"}</td>
+      <td>${c ? `<span class="status-badge ${c.status}">${statusLabel}</span>` : "—"}</td>
+      <td><button class="del-row" title="Delete milestone">×</button></td>
+    `;
+
+    tr.querySelectorAll("input").forEach(inp=>{
+      inp.addEventListener("change", ()=>{
+        const field = inp.dataset.field;
+        if(field==="duration"){
+          m.duration = Math.max(0, parseInt(inp.value,10) || 0);
+        } else if(field==="predecessors"){
+          m.predecessors = inp.value.split(",").map(s=>s.trim()).filter(Boolean);
+        } else {
+          m[field] = inp.value;
+        }
+        renderAll();
+      });
+    });
+
+    tr.querySelector('[data-role="target-btn"]').addEventListener("click", ()=>{
+      const input = window.prompt(
+        `Fixed target date for "${m.name}" (YYYY-MM-DD).\nLeave blank to auto-calculate from what depends on it.`,
+        m.targetDate || ""
+      );
+      if(input === null) return;
+      const trimmed = input.trim();
+      if(trimmed === ""){ m.targetDate = null; renderAll(); return; }
+      if(!isValidIsoDate(trimmed)){
+        window.alert(`"${input}" doesn't look like a valid date. Use YYYY-MM-DD, e.g. 2026-12-01.`);
+        return;
+      }
+      m.targetDate = trimmed;
+      renderAll();
+    });
+
+    tr.querySelector(".del-row").addEventListener("click", ()=>{
+      const removedId = m.id;
+      milestones = milestones.filter(x=>x.id!==removedId);
+      milestones.forEach(x=>{
+        x.predecessors = (x.predecessors||[]).filter(p=>p!==removedId);
+      });
+      setStatus(`Removed ${removedId} and cleared it from any dependent milestones.`, 4000);
+      renderAll();
+    });
+
+    tbody.appendChild(tr);
+  });
+}
+
+function renderTimeline(cpm){
+  const container = document.getElementById("timelineScroll");
+  if(!milestones.length){
+    container.innerHTML = "<p style='color:#B9B4A6;font-style:italic;'>No milestones yet.</p>";
+    return;
+  }
+
+  const byId = {};
+  milestones.forEach(m=> byId[m.id] = m);
+
+  const dated = milestones
+    .map(m=>({m, c: cpm.byMilestone[m.id]}))
+    .filter(x=> x.c.LF);
+  const undated = milestones.filter(m=> !cpm.byMilestone[m.id].LF);
+
+  if(!dated.length){
+    container.innerHTML = "<p style='color:#B9B4A6;font-style:italic;'>No milestone has a fixed date yet, so nothing can be plotted. Set at least one Finish date to anchor the timeline.</p>";
+    return;
+  }
+
+  function wrapText(str, maxChars){
+    const words = String(str).split(" ");
+    const lines = [];
+    let cur = "";
+    words.forEach(w=>{
+      if((cur + " " + w).trim().length > maxChars && cur){ lines.push(cur.trim()); cur = w; }
+      else { cur = (cur + " " + w).trim(); }
+    });
+    if(cur) lines.push(cur);
+    return lines;
+  }
+
+  const allOffsets = dated.map(x=> daysBetween(todayDate, x.c.LF));
+  const windowStart = Math.min(0, ...allOffsets) - 3;
+  const windowEnd = Math.max(0, ...allOffsets) + 3;
+  const totalDays = Math.max(1, windowEnd - windowStart);
+  const pxPerDay = Math.max(4, Math.min(20, Math.floor(1000/totalDays)));
+  const LEFT_MARGIN = 30, TOP_MARGIN = 78, LANE_HEIGHT = 60, SPINE_Y = TOP_MARGIN + 46;
+  const LINE_H = 12;
+
+  function xPos(iso){ return LEFT_MARGIN + (daysBetween(todayDate, iso) - windowStart) * pxPerDay; }
+
+  const critical = dated.filter(x=> x.c.critical).sort((a,b)=> a.c.LF < b.c.LF ? -1 : 1);
+  const others = dated.filter(x=> !x.c.critical).sort((a,b)=> a.c.LF < b.c.LF ? -1 : 1);
+
+  const pos = {}; // id -> {x,y}
+  critical.forEach(x=>{ pos[x.m.id] = {x: xPos(x.c.LF), y: SPINE_Y, tier:"critical"}; });
+  others.forEach((x, i)=>{ pos[x.m.id] = {x: xPos(x.c.LF), y: SPINE_Y + LANE_HEIGHT*(i+1), tier:"other"}; });
+
+  const svgWidth = Math.max(700, LEFT_MARGIN + (windowEnd-windowStart)*pxPerDay + 160);
+  const svgHeight = SPINE_Y + LANE_HEIGHT*(others.length+1) + 40;
+
+  // dependency edges — only draw links where BOTH ends are on the critical path,
+  // so the diagram reads as one clean chain rather than a tangle
+  let edgesSvg = "";
+  milestones.forEach(m=>{
+    if(!pos[m.id]) return;
+    (m.predecessors||[]).forEach(pid=>{
+      if(!pos[pid]) return;
+      const bothCritical = cpm.byMilestone[pid].critical && cpm.byMilestone[m.id].critical;
+      if(!bothCritical) return;
+      const a = pos[pid], b = pos[m.id];
+      const midX = (a.x+b.x)/2, midY = (a.y+b.y)/2;
+      edgesSvg += `<path d="M ${a.x} ${a.y} Q ${midX} ${midY} ${b.x} ${b.y}" fill="none" stroke="var(--critical)" stroke-width="3" marker-end="url(#arrowCritical)"/>`;
+    });
+  });
+
+  // today line
+  const todayX = xPos(todayDate);
+  let overlaySvg = `<line x1="${todayX}" y1="${TOP_MARGIN-46}" x2="${todayX}" y2="${svgHeight-24}" stroke="var(--today-line)" stroke-width="2" stroke-dasharray="4,3"/>
+    <text x="${todayX+4}" y="${TOP_MARGIN-50}" font-size="10" font-weight="700" fill="var(--today-line)">TODAY</text>`;
+
+  // node rendering
+  function nodeSvg(x, isCriticalNode){
+    const c = cpm.byMilestone[x.m.id];
+    const p = pos[x.m.id];
+    const size = isCriticalNode ? 13 : 8;
+    const fill = c.status==="overdue" ? "var(--overdue)" : c.status==="soon" ? "var(--soon)" : "var(--accent)";
+    const ringColor = c.critical ? "var(--critical)" : (c.isAnchor ? "var(--anchor)" : "none");
+    const ringWidth = c.critical ? 3 : (c.isAnchor ? 2 : 0);
+
+    let label;
+    if(isCriticalNode){
+      const nameLines = wrapText(x.m.name, 20);
+      const dateLine = fmtShort(c.LF) + (c.isAnchor ? " · fixed" : "");
+      const allLines = [...nameLines, dateLine];
+      const startY = p.y - size - 10 - (allLines.length-1)*LINE_H;
+      label = allLines.map((line,i)=>{
+        const isName = i < nameLines.length;
+        return `<text x="${p.x}" y="${startY + i*LINE_H}" font-size="${isName?12:9.5}" font-weight="${isName?700:400}" fill="${isName?'var(--header)':'var(--ink-soft)'}" text-anchor="middle">${escapeAttr(line)}</text>`;
+      }).join("");
+    } else {
+      const nameLines = wrapText(`${x.m.id} · ${x.m.name}`, 24).slice(0,2);
+      const dateLine = fmtShort(c.LF);
+      const allLines = [...nameLines, dateLine];
+      const startY = p.y - ((allLines.length-1)/2)*LINE_H + 3;
+      label = allLines.map((line,i)=>
+        `<text x="${p.x+size+6}" y="${startY + i*LINE_H}" font-size="9.5" fill="var(--ink-soft)">${escapeAttr(line)}</text>`
+      ).join("");
+    }
+
+    return `<g>
+      <rect x="${p.x-size/1.4}" y="${p.y-size/1.4}" width="${size*1.42}" height="${size*1.42}" rx="2"
+        transform="rotate(45 ${p.x} ${p.y})" fill="${fill}"
+        ${ringWidth ? `stroke="${ringColor}" stroke-width="${ringWidth}"` : ""}>
+        <title>${escapeAttr(x.m.name)}: ${fmtShort(c.LF)}${c.critical?' — CRITICAL PATH':''}${c.isAnchor?' (fixed date)':''}</title>
+      </rect>
+      ${label}
+    </g>`;
+  }
+
+  let nodesSvg = "";
+  critical.forEach(x=> nodesSvg += nodeSvg(x, true));
+  others.forEach(x=> nodesSvg += nodeSvg(x, false));
+
+  // axis — month boundaries only, to cut clutter
+  let axisSvg = "";
+  const startDateObj = toDateObj(addDaysISO(todayDate, windowStart));
+  const endDateObj = toDateObj(addDaysISO(todayDate, windowEnd));
+  let cursor = new Date(startDateObj.getFullYear(), startDateObj.getMonth(), 1);
+  while(cursor <= endDateObj){
+    const iso = cursor.toISOString().slice(0,10);
+    const x = xPos(iso);
+    if(x >= LEFT_MARGIN - 5){
+      axisSvg += `<line x1="${x}" y1="${TOP_MARGIN-46}" x2="${x}" y2="${svgHeight-22}" stroke="#EDEAE0" stroke-width="1"/>
+        <text x="${x+4}" y="${svgHeight-8}" font-size="10.5" font-weight="600" fill="var(--ink-soft)">${cursor.toLocaleDateString(undefined,{month:'short',year:'numeric'})}</text>`;
+    }
+    cursor = new Date(cursor.getFullYear(), cursor.getMonth()+1, 1);
+  }
+
+  const defs = `<defs>
+    <marker id="arrowCritical" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--critical)"/>
+    </marker>
+  </defs>`;
+
+  const svg = `<svg width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" style="min-width:${svgWidth}px;">
+    ${defs}
+    ${axisSvg}
+    ${edgesSvg}
+    ${overlaySvg}
+    ${nodesSvg}
+  </svg>`;
+
+  let unscheduledHtml = "";
+  if(undated.length){
+    unscheduledHtml = `<div class="unscheduled-panel">
+      <b>Not yet scheduled</b> (no path to a fixed deadline yet):
+      ${undated.map(m=>`<span class="unscheduled-chip">${m.id} · ${escapeAttr(m.name)}</span>`).join(" ")}
+    </div>`;
+  }
+
+  container.innerHTML = svg + unscheduledHtml;
+}
+
+/* ---------------- import / export ---------------- */
+const LOCAL_STORAGE_KEY = "cpm-milestone-tracker-v1";
+let lastSavedAt = null;
+
+function saveToLocalStorage(){
+  try{
+    const data = {projectTitle, milestones};
+    window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+    lastSavedAt = new Date();
+    const el = document.getElementById("savedIndicator");
+    if(el) el.textContent = "Saved to this browser · " + lastSavedAt.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+  }catch(e){
+    const el = document.getElementById("savedIndicator");
+    if(el) el.textContent = "Couldn't auto-save in this browser — use Export to keep a copy.";
+  }
+}
+
+function loadFromLocalStorage(){
+  try{
+    const raw = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+    if(!raw) return null;
+    return JSON.parse(raw);
+  }catch(e){
+    return null;
+  }
+}
+
+function loadProject(data){
+  projectTitle = data.projectTitle || "Untitled Project";
+  todayDate = new Date().toISOString().slice(0,10);
+  milestones = (data.milestones || []).map(m=>({
+    id: m.id, name: m.name || "", owner: m.owner || "",
+    predecessors: Array.isArray(m.predecessors)? m.predecessors.slice() : [],
+    duration: Number(m.duration)||0,
+    targetDate: m.targetDate || null
+  }));
+  const nums = milestones.map(m=>{
+    const mm = /^M(\d+)$/.exec(m.id||"");
+    return mm ? parseInt(mm[1],10) : 0;
+  });
+  nextIdNum = (nums.length ? Math.max(...nums) : 0) + 1;
+  renderAll();
+}
+
+document.getElementById("projTitle").addEventListener("change", (e)=>{ projectTitle = e.target.value; saveToLocalStorage(); });
+
+document.getElementById("todayBtn").addEventListener("click", ()=>{
+  const input = window.prompt("Enter today's date as YYYY-MM-DD:", todayDate || "");
+  if(input === null) return;
+  const trimmed = input.trim();
+  if(!isValidIsoDate(trimmed)){
+    window.alert(`"${input}" doesn't look like a valid date. Use YYYY-MM-DD, e.g. 2026-07-13.`);
+    return;
+  }
+  todayDate = trimmed;
+  renderAll();
+});
+
+document.getElementById("addRowBtn").addEventListener("click", ()=>{
+  const id = "M" + (nextIdNum++);
+  milestones.push({id, name:"New milestone", owner:"", predecessors:[], duration:0, targetDate:null});
+  renderAll();
+});
+
+document.getElementById("exportBtn").addEventListener("click", ()=>{
+  const data = {projectTitle, milestones};
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = slugify(projectTitle) + "-milestones.json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setStatus("Downloaded. Commit this JSON to your GitHub repo to persist it.", 5000);
+});
+
+document.getElementById("importFile").addEventListener("change", (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      loadProject(data);
+      setStatus(`Loaded "${data.projectTitle || file.name}".`, 4000);
+    }catch(err){
+      setStatus("Couldn't parse that file as JSON.", 5000);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+});
+
+document.getElementById("printBtn").addEventListener("click", ()=> window.print());
+
+/* ---------------- init ---------------- */
+async function init(){
+  const params = new URLSearchParams(location.search);
+  const dataParam = params.get("data");
+  let loaded = false;
+
+  if(dataParam){
+    // An explicit ?data= link means "load this specific dataset" — takes priority
+    // over whatever's saved locally (useful once there are separate per-workstream files).
+    try{
+      const res = await fetch(dataParam);
+      if(res.ok){ loadProject(await res.json()); loaded = true; setStatus(`Loaded ${dataParam}.`, 3500); }
+    }catch(e){ /* fall through */ }
+  }
+  if(!loaded){
+    const saved = loadFromLocalStorage();
+    if(saved){
+      loadProject(saved);
+      loaded = true;
+      setStatus("Restored your last saved session from this browser.", 3500);
+    }
+  }
+  if(!loaded){
+    try{
+      const res = await fetch("./data.json");
+      if(res.ok){ loadProject(await res.json()); loaded = true; setStatus("Loaded data.json.", 3500); }
+    }catch(e){ /* fall through */ }
+  }
+  if(!loaded){
+    loadProject(SAMPLE_DATA);
+    setStatus("Showing sample data — Import your own JSON to replace it.", 6000);
+  }
+}
+init();
+</script>
+</body>
+</html>
