@@ -868,7 +868,18 @@ function renderTimeline(cpm){
   const others = dated.filter(x=> !x.c.critical).sort((a,b)=> a.c.LF < b.c.LF ? -1 : 1);
 
   const pos = {}; // id -> {x,y}
-  critical.forEach(x=>{ pos[x.m.id] = {x: xPos(x.c.LF), y: SPINE_Y, tier:"critical"}; });
+  // When two or more critical-path milestones land on the exact same date, they'd
+  // otherwise sit on top of each other on the spine. Spread same-date groups
+  // symmetrically above/below the spine so both diamonds and labels stay legible.
+  const CRIT_STAGGER = 30;
+  const criticalByDate = {};
+  critical.forEach(x=>{ (criticalByDate[x.c.LF] = criticalByDate[x.c.LF] || []).push(x); });
+  critical.forEach(x=>{
+    const group = criticalByDate[x.c.LF];
+    const idx = group.indexOf(x);
+    const yOffset = group.length > 1 ? (idx - (group.length-1)/2) * CRIT_STAGGER : 0;
+    pos[x.m.id] = {x: xPos(x.c.LF), y: SPINE_Y + yOffset, tier:"critical"};
+  });
   others.forEach((x, i)=>{ pos[x.m.id] = {x: xPos(x.c.LF), y: SPINE_Y + LANE_HEIGHT*(i+1), tier:"other"}; });
 
   const svgWidth = Math.max(700, LEFT_MARGIN + (windowEnd-windowStart)*pxPerDay + 160);
