@@ -1,0 +1,21 @@
+{
+  "projectTitle": "UM",
+  "milestones": [
+    {
+      "id": "M1",
+      "name": "Develop UM protocol",
+      "owner": "",
+      "predecessors": [],
+      "duration": 120,
+      "targetDate": "2027-01-01"
+    },
+    {
+      "id": "M2",
+      "name": "Launch 24 hr call system",
+      "owner": "",
+      "predecessors": [],
+      "duration": 120,
+      "targetDate": "2027-01-01"
+    }
+  ]
+}
