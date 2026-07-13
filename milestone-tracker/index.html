@@ -67,6 +67,7 @@
     border-radius:4px; min-width:280px;
   }
   .title-row input#projTitle:focus{ outline:2px solid var(--accent); background:#fff; }
+  .title-row input#projTitle::placeholder{ color:var(--ink-soft); font-style:italic; font-weight:400; }
   .date-field{ font-size:13px; color:var(--ink-soft); display:flex; align-items:center; gap:6px; }
   .date-btn{
     font-family:inherit; font-size:13px; font-weight:600; color:var(--header);
@@ -150,6 +151,7 @@
     background:transparent; border-radius:3px; padding:3px 4px; color:var(--ink);
   }
   table.cpm td input:focus{ outline:none; border-color:var(--accent); background:#FFFDF6; }
+  table.cpm td input::placeholder{ color:#B9B4A6; font-style:italic; }
   table.cpm td.id-col{ font-weight:700; color:var(--header); white-space:nowrap; }
   table.cpm td.computed{ color:var(--ink); white-space:nowrap; font-variant-numeric:tabular-nums; }
   table.cpm td.computed .offset{ display:block; font-size:10.5px; color:var(--ink-soft); opacity:0.85; }
@@ -160,6 +162,33 @@
   }
   .target-btn.anchored{ background:var(--anchor); color:#fff; border-color:var(--anchor); }
   .target-btn:hover{ opacity:0.9; }
+
+  /* ---- custom calendar popover ---- */
+  .date-picker-popover{
+    display:none; position:fixed; z-index:50; background:#fff; border:1px solid var(--line);
+    border-radius:8px; box-shadow:0 10px 28px rgba(35,48,46,0.18);
+    padding:10px 12px 12px; width:228px; font-family:inherit;
+  }
+  .dp-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .dp-header .dp-label{ font-family:Georgia,"Times New Roman",serif; font-weight:600; font-size:13px; color:var(--header); }
+  .dp-nav{ background:none; border:none; font-size:15px; line-height:1; cursor:pointer; color:var(--ink-soft); padding:3px 9px; border-radius:5px; }
+  .dp-nav:hover{ background:#F1EFE7; color:var(--ink); }
+  .dp-weekdays{ display:grid; grid-template-columns:repeat(7,1fr); text-align:center; font-size:10.5px; color:var(--ink-soft); margin-bottom:3px; }
+  .dp-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+  .dp-day{
+    aspect-ratio:1; border:none; background:none; border-radius:5px; font-size:12px;
+    color:var(--ink); cursor:pointer; padding:0;
+  }
+  .dp-day:hover{ background:#F1EFE7; }
+  .dp-day.today{ box-shadow:inset 0 0 0 1.5px var(--today-line); font-weight:700; }
+  .dp-day.selected{ background:var(--anchor); color:#fff; }
+  .dp-day.dp-empty{ cursor:default; }
+  .dp-footer{ display:flex; justify-content:space-between; margin-top:8px; padding-top:8px; border-top:1px solid var(--line); }
+  .dp-footer button{
+    font-family:inherit; font-size:11.5px; font-weight:600; background:none;
+    border:1px solid var(--line); border-radius:5px; padding:4px 10px; cursor:pointer; color:var(--ink);
+  }
+  .dp-footer button:hover{ background:#F1EFE7; }
   .status-badge{
     display:inline-block; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:10px; white-space:nowrap;
   }
@@ -205,7 +234,7 @@
   footer.notes code{ background:#EFEDE4; padding:1px 5px; border-radius:3px; }
 
   @media print{
-    .toolbar, .banner{ display:none !important; }
+    .toolbar, .banner, .date-picker-popover{ display:none !important; }
   }
 </style>
 </head>
@@ -218,7 +247,7 @@
 
   <header class="doc">
     <div class="title-row">
-      <input id="projTitle" value="Untitled Project">
+      <input id="projTitle" value="" placeholder="Untitled — click to name this workstream/project">
       <div class="date-field">
         Today: <button type="button" id="todayBtn" class="date-btn"></button>
       </div>
@@ -385,8 +414,8 @@ async function selectWorkstream(wsId){
       return;
     }
   }catch(e){ /* fall through */ }
-  loadProject({projectTitle:"Untitled — type your workstream name above, then Export", milestones:[]}, {syncLabel:false});
-  setStatus(`Couldn't find ${ws.file} yet in this folder — starting blank. Rename it above, add milestones, then Export.`, 6000);
+  loadProject({projectTitle:"", milestones:[]}, {syncLabel:false});
+  setStatus(`Couldn't find ${ws.file} yet in this folder — starting blank. Click the title field above to name it, add milestones, then Export.`, 6000);
 }
 
 let projectTitle = "";
@@ -426,6 +455,106 @@ function isValidIsoDate(s){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
   return toDateObj(s) !== null;
 }
+
+/* ---------------- custom calendar popover ---------------- */
+let dpState = { onSelect:null, onClear:null, isoValue:null };
+let dpViewDate = new Date();
+
+function buildDatePickerDom(){
+  if(document.getElementById("datePickerPopover")) return;
+  const el = document.createElement("div");
+  el.id = "datePickerPopover";
+  el.className = "date-picker-popover";
+  el.innerHTML = `
+    <div class="dp-header">
+      <button type="button" class="dp-nav" data-dir="-1">‹</button>
+      <span class="dp-label" id="dpLabel"></span>
+      <button type="button" class="dp-nav" data-dir="1">›</button>
+    </div>
+    <div class="dp-weekdays"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+    <div class="dp-grid" id="dpGrid"></div>
+    <div class="dp-footer">
+      <button type="button" id="dpClearBtn">Clear</button>
+      <button type="button" id="dpTodayShortcut">Today</button>
+    </div>`;
+  document.body.appendChild(el);
+  el.addEventListener("click", (e)=> e.stopPropagation()); // clicks inside shouldn't close it
+
+  el.querySelectorAll(".dp-nav").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      dpViewDate.setMonth(dpViewDate.getMonth() + parseInt(btn.dataset.dir,10));
+      renderDatePickerGrid();
+    });
+  });
+  document.getElementById("dpClearBtn").addEventListener("click", ()=>{
+    if(dpState.onClear) dpState.onClear();
+    closeDatePicker();
+  });
+  document.getElementById("dpTodayShortcut").addEventListener("click", ()=>{
+    const iso = new Date().toISOString().slice(0,10);
+    if(dpState.onSelect) dpState.onSelect(iso);
+    closeDatePicker();
+  });
+}
+
+function renderDatePickerGrid(){
+  const grid = document.getElementById("dpGrid");
+  const label = document.getElementById("dpLabel");
+  const year = dpViewDate.getFullYear(), month = dpViewDate.getMonth();
+  label.textContent = dpViewDate.toLocaleDateString(undefined, {month:"long", year:"numeric"});
+
+  const startWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const todayIso = new Date().toISOString().slice(0,10);
+
+  let html = "";
+  for(let i=0;i<startWeekday;i++) html += `<span class="dp-day dp-empty"></span>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const iso = `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const cls = ["dp-day"];
+    if(dpState.isoValue === iso) cls.push("selected");
+    if(todayIso === iso) cls.push("today");
+    html += `<button type="button" class="${cls.join(" ")}" data-iso="${iso}">${d}</button>`;
+  }
+  grid.innerHTML = html;
+  grid.querySelectorAll(".dp-day:not(.dp-empty)").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      if(dpState.onSelect) dpState.onSelect(btn.dataset.iso);
+      closeDatePicker();
+    });
+  });
+}
+
+function openDatePicker(anchorEl, isoValue, {onSelect, onClear=null}){
+  buildDatePickerDom();
+  dpState = {onSelect, onClear, isoValue: isoValue || null};
+  dpViewDate = (isoValue && isValidIsoDate(isoValue)) ? toDateObj(isoValue) : new Date();
+
+  document.getElementById("dpClearBtn").style.display = onClear ? "inline-block" : "none";
+  renderDatePickerGrid();
+
+  const el = document.getElementById("datePickerPopover");
+  el.style.display = "block";
+  const rect = anchorEl.getBoundingClientRect();
+  let left = rect.left;
+  const maxLeft = document.documentElement.clientWidth - 244;
+  if(left > maxLeft) left = Math.max(8, maxLeft);
+  el.style.top = (rect.bottom + 5) + "px";
+  el.style.left = left + "px";
+
+  setTimeout(()=>{
+    document.addEventListener("click", closeDatePicker);
+    document.addEventListener("keydown", dpEscHandler);
+  }, 0);
+}
+
+function closeDatePicker(){
+  const el = document.getElementById("datePickerPopover");
+  if(el) el.style.display = "none";
+  document.removeEventListener("click", closeDatePicker);
+  document.removeEventListener("keydown", dpEscHandler);
+}
+function dpEscHandler(e){ if(e.key === "Escape") closeDatePicker(); }
 
 /* ---------------- milestone backward-propagation engine ---------------- */
 function computeMilestones(items, todayIso){
@@ -647,8 +776,8 @@ function renderTableRows(cpm){
 
     tr.innerHTML = `
       <td class="id-col">${m.id}${critBadge}</td>
-      <td><input type="text" data-field="name" value="${escapeAttr(m.name)}"></td>
-      <td><input type="text" data-field="owner" value="${escapeAttr(m.owner)}"></td>
+      <td><input type="text" data-field="name" value="${escapeAttr(m.name)}" placeholder="Milestone name"></td>
+      <td><input type="text" data-field="owner" value="${escapeAttr(m.owner)}" placeholder="Owner"></td>
       <td><input type="text" data-field="predecessors" value="${escapeAttr(predVal)}" placeholder="e.g. M1, M2"></td>
       <td><input type="number" min="0" step="1" data-field="duration" value="${m.duration||0}"></td>
       <td class="computed">${c && c.LS ? fmtShort(c.LS) : "—"}</td>
@@ -672,20 +801,11 @@ function renderTableRows(cpm){
       });
     });
 
-    tr.querySelector('[data-role="target-btn"]').addEventListener("click", ()=>{
-      const input = window.prompt(
-        `Fixed target date for "${m.name}" (YYYY-MM-DD).\nLeave blank to auto-calculate from what depends on it.`,
-        m.targetDate || ""
-      );
-      if(input === null) return;
-      const trimmed = input.trim();
-      if(trimmed === ""){ m.targetDate = null; renderAll(); return; }
-      if(!isValidIsoDate(trimmed)){
-        window.alert(`"${input}" doesn't look like a valid date. Use YYYY-MM-DD, e.g. 2026-12-01.`);
-        return;
-      }
-      m.targetDate = trimmed;
-      renderAll();
+    tr.querySelector('[data-role="target-btn"]').addEventListener("click", (e)=>{
+      openDatePicker(e.currentTarget, m.targetDate, {
+        onSelect: (iso)=>{ m.targetDate = iso; renderAll(); },
+        onClear: ()=>{ m.targetDate = null; renderAll(); }
+      });
     });
 
     tr.querySelector(".del-row").addEventListener("click", ()=>{
@@ -885,7 +1005,7 @@ function loadFromLocalStorage(wsId){
 }
 
 function loadProject(data, opts={}){
-  projectTitle = data.projectTitle || "Untitled Project";
+  projectTitle = data.projectTitle || "";
   todayDate = new Date().toISOString().slice(0,10);
   milestones = (data.milestones || []).map(m=>({
     id: m.id, name: m.name || "", owner: m.owner || "",
@@ -912,16 +1032,10 @@ document.getElementById("projTitle").addEventListener("change", (e)=>{
   if(ws){ ws.label = projectTitle || ws.label; renderNav(); }
 });
 
-document.getElementById("todayBtn").addEventListener("click", ()=>{
-  const input = window.prompt("Enter today's date as YYYY-MM-DD:", todayDate || "");
-  if(input === null) return;
-  const trimmed = input.trim();
-  if(!isValidIsoDate(trimmed)){
-    window.alert(`"${input}" doesn't look like a valid date. Use YYYY-MM-DD, e.g. 2026-07-13.`);
-    return;
-  }
-  todayDate = trimmed;
-  renderAll();
+document.getElementById("todayBtn").addEventListener("click", (e)=>{
+  openDatePicker(e.currentTarget, todayDate, {
+    onSelect: (iso)=>{ todayDate = iso; renderAll(); }
+  });
 });
 
 document.getElementById("timelineSortToggle").addEventListener("change", (e)=>{
@@ -931,7 +1045,7 @@ document.getElementById("timelineSortToggle").addEventListener("change", (e)=>{
 
 document.getElementById("addRowBtn").addEventListener("click", ()=>{
   const id = "M" + (nextIdNum++);
-  milestones.push({id, name:"New milestone", owner:"", predecessors:[], duration:0, targetDate:null});
+  milestones.push({id, name:"", owner:"", predecessors:[], duration:0, targetDate:null});
   renderAll();
 });
 
