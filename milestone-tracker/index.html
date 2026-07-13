@@ -859,7 +859,7 @@ function renderTimeline(cpm){
   const windowEnd = Math.max(0, ...allOffsets) + 3;
   const totalDays = Math.max(1, windowEnd - windowStart);
   const pxPerDay = Math.max(4, Math.min(20, Math.floor(1000/totalDays)));
-  const LEFT_MARGIN = 30, TOP_MARGIN = 78, LANE_HEIGHT = 60, SPINE_Y = TOP_MARGIN + 46;
+  const LEFT_MARGIN = 30, TOP_MARGIN = 100, LANE_HEIGHT = 60, SPINE_Y = TOP_MARGIN + 46;
   const LINE_H = 12;
 
   function xPos(iso){ return LEFT_MARGIN + (daysBetween(todayDate, iso) - windowStart) * pxPerDay; }
@@ -868,10 +868,11 @@ function renderTimeline(cpm){
   const others = dated.filter(x=> !x.c.critical).sort((a,b)=> a.c.LF < b.c.LF ? -1 : 1);
 
   const pos = {}; // id -> {x,y}
-  // When two or more critical-path milestones land on the exact same date, they'd
-  // otherwise sit on top of each other on the spine. Spread same-date groups
-  // symmetrically above/below the spine so both diamonds and labels stay legible.
-  const CRIT_STAGGER = 30;
+  // When two or more critical-path milestones land on the exact same date, spread
+  // them vertically around the spine so labels don't collide. Now that critical
+  // labels are name-only (no date line), less vertical room is needed per label,
+  // so a wider stagger keeps clear separation without much extra height.
+  const CRIT_STAGGER = 54;
   const criticalByDate = {};
   critical.forEach(x=>{ (criticalByDate[x.c.LF] = criticalByDate[x.c.LF] || []).push(x); });
   critical.forEach(x=>{
@@ -916,18 +917,13 @@ function renderTimeline(cpm){
 
     let label;
     if(isCriticalNode){
-      const nameLines = wrapText(x.m.name, 20);
-      const dateLine = fmtShort(c.LF) + (c.isAnchor ? " · fixed" : "");
-      const allLines = [...nameLines, dateLine];
+      const allLines = wrapText(x.m.name, 20);
       const startY = p.y - size - 10 - (allLines.length-1)*LINE_H;
-      label = allLines.map((line,i)=>{
-        const isName = i < nameLines.length;
-        return `<text x="${p.x}" y="${startY + i*LINE_H}" font-size="${isName?12:9.5}" font-weight="${isName?700:400}" fill="${isName?'var(--header)':'var(--ink-soft)'}" text-anchor="middle">${escapeAttr(line)}</text>`;
-      }).join("");
+      label = allLines.map((line,i)=>
+        `<text x="${p.x}" y="${startY + i*LINE_H}" font-size="12" font-weight="700" fill="var(--header)" text-anchor="middle">${escapeAttr(line)}</text>`
+      ).join("");
     } else {
-      const nameLines = wrapText(`${x.m.id} · ${x.m.name}`, 24).slice(0,2);
-      const dateLine = fmtShort(c.LF);
-      const allLines = [...nameLines, dateLine];
+      const allLines = wrapText(`${x.m.id} · ${x.m.name}`, 24).slice(0,2);
       const startY = p.y - ((allLines.length-1)/2)*LINE_H + 3;
       label = allLines.map((line,i)=>
         `<text x="${p.x+size+6}" y="${startY + i*LINE_H}" font-size="9.5" fill="var(--ink-soft)">${escapeAttr(line)}</text>`
