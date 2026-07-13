@@ -1,0 +1,21 @@
+{
+  "projectTitle": "Network Development",
+  "milestones": [
+    {
+      "id": "M1",
+      "name": "SNF contracts x 2",
+      "owner": "",
+      "predecessors": [],
+      "duration": 90,
+      "targetDate": "2027-01-01"
+    },
+    {
+      "id": "M2",
+      "name": "Hospice",
+      "owner": "",
+      "predecessors": [],
+      "duration": 90,
+      "targetDate": "2027-02-01"
+    }
+  ]
+}
