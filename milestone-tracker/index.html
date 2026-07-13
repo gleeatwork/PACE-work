@@ -113,6 +113,12 @@
   .swatch.undetermined{ background:var(--undetermined); }
   .swatch.anchor{ background:var(--anchor); border-radius:2px; }
 
+  .sort-toggle{
+    display:inline-flex; align-items:center; gap:6px; font-size:12.5px;
+    color:var(--ink-soft); margin:0 0 10px; cursor:pointer;
+  }
+  .sort-toggle input{ cursor:pointer; }
+
   .table-scroll{ overflow-x:auto; border:1px solid var(--line); border-radius:6px; background:#fff; }
   table.cpm{ border-collapse:separate; border-spacing:0; width:100%; min-width:1050px; }
   table.cpm th, table.cpm td{
@@ -224,6 +230,11 @@
     <span class="saved-indicator" id="savedIndicator"></span>
     <span class="status" id="statusMsg"></span>
   </div>
+
+  <label class="sort-toggle">
+    <input type="checkbox" id="timelineSortToggle" checked>
+    Auto-sort rows by date (timeline order)
+  </label>
 
   <div class="table-scroll">
     <table class="cpm" id="cpmTable">
@@ -378,6 +389,7 @@ let projectTitle = "";
 let todayDate = "";
 let milestones = []; // {id,name,owner,predecessors:[],duration,targetDate: iso|null}
 let nextIdNum = 1;
+let sortMode = "timeline"; // "timeline" = auto-sort by computed date, "entry" = order added
 
 const statusEl = document.getElementById("statusMsg");
 function setStatus(msg, timeout){
@@ -598,7 +610,21 @@ function renderAll(){
 function renderTableRows(cpm){
   const tbody = document.getElementById("cpmBody");
   tbody.innerHTML = "";
-  milestones.forEach((m)=>{
+
+  let displayList = milestones;
+  if(sortMode === "timeline" && cpm){
+    displayList = milestones.map((m,i)=>({m,i})).sort((a,b)=>{
+      const ca = cpm.byMilestone[a.m.id], cb = cpm.byMilestone[b.m.id];
+      const da = ca && ca.LF ? ca.LF : null;
+      const db = cb && cb.LF ? cb.LF : null;
+      if(da && db) return da < db ? -1 : da > db ? 1 : (a.i - b.i);
+      if(da && !db) return -1;   // dated milestones come before undated ones
+      if(!da && db) return 1;
+      return a.i - b.i;          // both undated — keep original relative order
+    }).map(x=>x.m);
+  }
+
+  displayList.forEach((m)=>{
     const tr = document.createElement("tr");
     const c = cpm ? cpm.byMilestone[m.id] : null;
     if(c){
@@ -891,6 +917,11 @@ document.getElementById("todayBtn").addEventListener("click", ()=>{
     return;
   }
   todayDate = trimmed;
+  renderAll();
+});
+
+document.getElementById("timelineSortToggle").addEventListener("change", (e)=>{
+  sortMode = e.target.checked ? "timeline" : "entry";
   renderAll();
 });
 
